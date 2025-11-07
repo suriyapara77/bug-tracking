@@ -27,20 +27,29 @@ def create_app():
     app.register_blueprint(issues_bp)
     app.register_blueprint(chatbot_bp)
     
-    # Create database tables and seed data
-    # Use lazy initialization - only create tables when needed
-    with app.app_context():
+    # Ensure database is initialized on first request
+    # Store initialization state in app config
+    app.config['_db_initialized'] = False
+    
+    @app.before_request
+    def ensure_database():
+        if app.config.get('_db_initialized'):
+            return
+        
         try:
-            # Check if database file exists or can be created
-            db.create_all()
-            # Only seed if database is empty
-            seed_data()
-        except Exception as e:
-            # Log error but don't crash - database might already exist or have issues
-            import logging
-            logging.warning(f"Database initialization warning: {e}")
-            # Try to continue anyway - tables might already exist
-            # In serverless environments, this is often expected on cold starts
+            # Try to query to see if tables exist
+            from models import User
+            User.query.first()
+            app.config['_db_initialized'] = True
+        except Exception:
+            # Tables don't exist, create them
+            try:
+                db.create_all()
+                seed_data()
+                app.config['_db_initialized'] = True
+            except Exception as e:
+                import logging
+                logging.warning(f"Database creation warning: {e}")
     
     return app
 
