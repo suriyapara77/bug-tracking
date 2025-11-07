@@ -29,8 +29,14 @@ def create_app():
     
     # Create database tables and seed data
     with app.app_context():
-        db.create_all()
-        seed_data()
+        try:
+            db.create_all()
+            seed_data()
+        except Exception as e:
+            # Log error but don't crash - database might already exist or have issues
+            import logging
+            logging.warning(f"Database initialization warning: {e}")
+            # Try to continue anyway - tables might already exist
     
     return app
 

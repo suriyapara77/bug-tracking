@@ -1,5 +1,10 @@
 import sys
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Add the parent directory (bug_tracker) to the path so we can import app
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -10,11 +15,13 @@ sys.path.insert(0, parent_dir)
 if not os.environ.get('VERCEL'):
     os.environ['VERCEL'] = '1'
 
-from app import app
-
-# Export the app for Vercel's Python runtime
-# Vercel automatically handles WSGI conversion for Flask apps
-# The app variable is what Vercel will use as the handler
-handler = app
+try:
+    from app import app
+    handler = app
+    logger.info("Flask app imported successfully")
+except Exception as e:
+    # Log error for debugging
+    logger.error(f"Failed to import app: {e}", exc_info=True)
+    raise
 
 

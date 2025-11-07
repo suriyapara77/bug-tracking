@@ -73,7 +73,7 @@ class ChatbotService:
     def get_models():
         """Get database models"""
         from models import Issue, User
-        from app import db
+        from extensions import db
         return Issue, User, db
 
 
