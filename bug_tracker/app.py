@@ -5,7 +5,15 @@ from config import Config
 from datetime import datetime, timedelta
 
 def create_app():
-    app = Flask(__name__)
+    # Get the base directory (bug_tracker folder)
+    import os
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Initialize Flask with explicit template and static folders
+    # This ensures templates and static files are found correctly in serverless environments
+    app = Flask(__name__, 
+                template_folder=os.path.join(base_dir, 'templates'),
+                static_folder=os.path.join(base_dir, 'static'))
     app.config.from_object(Config)
     
     # Initialize extensions
