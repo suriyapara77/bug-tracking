@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if issue_id %}Edit Issue{% else %}New Issue{% endif %} - Bug Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Bug Tracker</h1>
+            <nav>
+                <a href="/">Home</a>
+                <a href="/issue/new">Issues</a>
+                <a href="/users/new">Assignees</a>
+                <a href="/calendar">Calendar</a>
+                <a href="/chat">Chatbot</a>
+            </nav>
+        </header>
+        
+        <main>
+            <!-- Filter Bar -->
+            <section class="filter-section">
+                <h2>Filter Issues</h2>
+                <div class="filter-bar">
+                    <input type="text" id="filter-title" placeholder="Search by title..." class="filter-input">
+                    <select id="filter-status" class="filter-select">
+                        <option value="">All Statuses</option>
+                        <option value="Open">Open</option>
+                        <option value="In-Progress">In-Progress</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                    <select id="filter-assignee" class="filter-select">
+                        <option value="">All Assignees</option>
+                    </select>
+                    <button onclick="applyFilters()" class="btn-filter">Filter</button>
+                    <button onclick="clearFilters()" class="btn-clear">Clear</button>
+                </div>
+            </section>
+
+            <!-- Add New Issue Form -->
+            <section class="form-section">
+                <h2>Add New Issue</h2>
+                <form id="issue-form" class="issue-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="title">Title:</label>
+                            <input type="text" id="title" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="priority">Priority:</label>
+                            <select id="priority" name="priority">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <textarea id="description" name="description" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="status">Status:</label>
+                            <select id="status" name="status">
+                                <option value="Open" selected>Open</option>
+                                <option value="In-Progress">In-Progress</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="assignee_id">Assignee:</label>
+                            <select id="assignee_id" name="assignee_id">
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="due_date">Due Date:</label>
+                            <input type="datetime-local" id="due_date" name="due_date">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">Create Issue</button>
+                </form>
+                <div id="form-message"></div>
+            </section>
+
+            <!-- Issues List -->
+            <section class="issues-section">
+                <h2>All Issues</h2>
+                <div id="issues-table-container">
+                    <table class="issues-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Assignee</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="issues-list">
+                            <tr>
+                                <td colspan="7" class="loading">Loading issues...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            
+        </main>
+    </div>
+    
+    <script>
+        let allIssues = [];
+        let allUsers = [];
+
+        // Load users for assignee dropdowns
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                allUsers = await response.json();
+                const assigneeSelect = document.getElementById('assignee_id');
+                const filterAssignee = document.getElementById('filter-assignee');
+                
+                // Clear existing options except "None"
+                assigneeSelect.innerHTML = '<option value="">None</option>';
+                filterAssignee.innerHTML = '<option value="">All Assignees</option>';
+                
+                allUsers.forEach(user => {
+                    const option1 = document.createElement('option');
+                    option1.value = user.id;
+                    option1.textContent = user.name + ' (' + user.role + ')';
+                    assigneeSelect.appendChild(option1);
+                    
+                    const option2 = document.createElement('option');
+                    option2.value = user.id;
+                    option2.textContent = user.name + ' (' + user.role + ')';
+                    filterAssignee.appendChild(option2);
+                });
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        // Fetch and display issues
+        async function loadIssues() {
+            try {
+                const response = await fetch('/issues');
+                allIssues = await response.json();
+                displayIssues(allIssues);
+            } catch (error) {
+                console.error('Error loading issues:', error);
+                document.getElementById('issues-list').innerHTML = 
+                    '<tr><td colspan="7" class="error">Error loading issues.</td></tr>';
+            }
+        }
+
+        // Display issues in table
+        function displayIssues(issues) {
+            const issuesList = document.getElementById('issues-list');
+            
+            if (issues.length === 0) {
+                issuesList.innerHTML = '<tr><td colspan="7" class="empty">No issues found.</td></tr>';
+                return;
+            }
+            
+            issuesList.innerHTML = issues.map(issue => {
+                const assignee = issue.assignee ? `${issue.assignee.name} (${issue.assignee.role})` : 'Unassigned';
+                const dueDate = issue.due_date ? new Date(issue.due_date).toLocaleDateString() : 'No due date';
+                const statusClass = issue.status.toLowerCase().replace('-', '');
+                
+                return `
+                    <tr>
+                        <td>#${issue.id}</td>
+                        <td><strong>${issue.title}</strong><br><small>${issue.description.substring(0, 50)}${issue.description.length > 50 ? '...' : ''}</small></td>
+                        <td><span class="status-badge status-${statusClass}">${issue.status}</span></td>
+                        <td><span class="priority-badge priority-${issue.priority.toLowerCase()}">${issue.priority}</span></td>
+                        <td>${assignee}</td>
+                        <td>${dueDate}</td>
+                        <td class="actions">
+                            <button onclick="changeStatus(${issue.id})" class="btn-status">Status</button>
+                            <button onclick="deleteIssue(${issue.id})" class="btn-delete">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const titleFilter = document.getElementById('filter-title').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+            const assigneeFilter = document.getElementById('filter-assignee').value;
+            
+            let filtered = allIssues.filter(issue => {
+                const matchesTitle = !titleFilter || issue.title.toLowerCase().includes(titleFilter);
+                const matchesStatus = !statusFilter || issue.status === statusFilter;
+                const matchesAssignee = !assigneeFilter || 
+                    (issue.assignee && issue.assignee.id.toString() === assigneeFilter);
+                
+                return matchesTitle && matchesStatus && matchesAssignee;
+            });
+            
+            displayIssues(filtered);
+        }
+
+        // Clear filters
+        function clearFilters() {
+            document.getElementById('filter-title').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-assignee').value = '';
+            displayIssues(allIssues);
+        }
+
+        // Create new issue
+        document.getElementById('issue-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                status: document.getElementById('status').value,
+                priority: document.getElementById('priority').value,
+                assignee_id: document.getElementById('assignee_id').value || null,
+                due_date: document.getElementById('due_date').value
+            };
+            
+            try {
+                const response = await fetch('/issues', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('form-message').innerHTML = '<p class="success">Issue created successfully!</p>';
+                    document.getElementById('issue-form').reset();
+                    loadIssues();
+                    setTimeout(() => {
+                        document.getElementById('form-message').innerHTML = '';
+                    }, 3000);
+                } else {
+                    document.getElementById('form-message').innerHTML = `<p class="error">${result.error || 'Error creating issue.'}</p>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('form-message').innerHTML = '<p class="error">Error creating issue.</p>';
+            }
+        });
+
+        // Change status
+        async function changeStatus(issueId) {
+            const issue = allIssues.find(i => i.id === issueId);
+            if (!issue) return;
+            
+            const currentStatus = issue.status;
+            const statuses = ['Open', 'In-Progress', 'Closed'];
+            const currentIndex = statuses.indexOf(currentStatus);
+            const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+            
+            try {
+                const response = await fetch(`/issues/${issueId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: nextStatus })
+                });
+                
+                if (response.ok) {
+                    loadIssues();
+                } else {
+                    alert('Error changing status.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error changing status.');
+            }
+        }
+
+        // Delete issue
+        async function deleteIssue(issueId) {
+            if (!confirm('Are you sure you want to delete this issue?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/issues/${issueId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadIssues();
+                } else {
+                    alert('Error deleting issue.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error deleting issue.');
+            }
+        }
+
+        // Initialize page
+        window.addEventListener('DOMContentLoaded', () => {
+            loadUsers();
+            loadIssues();
+        });
+    </script>
+</body>
+</html>

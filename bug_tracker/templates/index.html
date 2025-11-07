@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .hero-section {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, rgba(0, 119, 182, 0.15) 0%, rgba(0, 180, 216, 0.15) 100%);
+            border-radius: 16px;
+            margin-bottom: 40px;
+            border: 2px solid rgba(0, 180, 216, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 119, 182, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, 
+                transparent 30%, 
+                rgba(0, 180, 216, 0.1) 50%, 
+                transparent 70%);
+            animation: wave-shimmer 4s infinite ease-in-out;
+        }
+
+        .hero-section h2 {
+            font-size: 2.5em;
+            color: #003d5c;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-section h2::after {
+            display: none;
+        }
+
+        .hero-section p {
+            font-size: 1.2em;
+            color: #0077b6;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.8;
+            position: relative;
+            z-index: 1;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 1200px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(232, 244, 248, 0.95) 100%);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 180, 216, 0.3);
+            box-shadow: 0 4px 16px rgba(0, 119, 182, 0.15);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #0077b6 0%, #00b4d8 100%);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 119, 182, 0.25);
+            border-color: #00b4d8;
+        }
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .feature-card h3 {
+            color: #003d5c;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .feature-card p {
+            color: #0096c7;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .feature-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #0077b6 0%, #005f73 100%);
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 119, 182, 0.3);
+        }
+
+        .feature-link:hover {
+            background: linear-gradient(135deg, #00b4d8 0%, #0096c7 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 180, 216, 0.4);
+        }
+
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 119, 182, 0.9) 0%, rgba(0, 100, 148, 0.9) 100%);
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid rgba(0, 180, 216, 0.4);
+            box-shadow: 0 4px 16px rgba(0, 119, 182, 0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 180, 216, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ffffff;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #b8e6f5;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .getting-started {
+            background: linear-gradient(135deg, rgba(72, 202, 228, 0.2) 0%, rgba(0, 180, 216, 0.2) 100%);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 180, 216, 0.3);
+            margin-top: 40px;
+        }
+
+        .getting-started h3 {
+            color: #003d5c;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .getting-started ol {
+            color: #0077b6;
+            line-height: 2;
+            padding-left: 25px;
+        }
+
+        .getting-started li {
+            margin-bottom: 10px;
+            font-size: 1.05em;
+        }
+
+        .getting-started strong {
+            color: #003d5c;
+        }
+
+        @keyframes wave-shimmer {
+            0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Bug Tracker</h1>
+            <nav>
+                <a href="/">Home</a>
+                <a href="/issue/new">Issues</a>
+                <a href="/users/new">Assignees</a>
+                <a href="/calendar">Calendar</a>
+                <a href="/chat">Chatbot</a>
+            </nav>
+        </header>
+        
+        <main>
+            <section class="hero-section">
+                <h2>🌊 Welcome to Bug Tracker</h2>
+                <p>Your comprehensive solution for managing bugs, tracking issues, and collaborating with your team. Navigate the waters of software development with ease and efficiency.</p>
+            </section>
+
+            <section class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">🐛</span>
+                    <h3>Issue Management</h3>
+                    <p>Create, edit, and track bugs with detailed descriptions, priorities, and status updates. Filter and search to find exactly what you need.</p>
+                    <a href="/issue/new" class="feature-link">Manage Issues →</a>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">👥</span>
+                    <h3>Team Assignees</h3>
+                    <p>Manage your team members and assign issues to specific people. Keep track of who's working on what with role-based organization.</p>
+                    <a href="/users/new" class="feature-link">View Team →</a>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">📅</span>
+                    <h3>Weekly Calendar</h3>
+                    <p>Visualize your issues on a weekly calendar view. Navigate between weeks and see due dates at a glance with color-coded status indicators.</p>
+                    <a href="/calendar" class="feature-link">Open Calendar →</a>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">🤖</span>
+                    <h3>AI Chatbot Assistant</h3>
+                    <p>Get instant help with your bug tracking needs. Ask questions, get insights, and receive guidance on managing your issues effectively.</p>
+                    <a href="/chat" class="feature-link">Chat Now →</a>
+                </div>
+            </section>
+
+            <section class="getting-started">
+                <h3>🚀 Getting Started</h3>
+                <ol>
+                    <li><strong>Create Team Members:</strong> Start by adding your team members in the Assignees section.</li>
+                    <li><strong>Report Issues:</strong> Create new bug reports with titles, descriptions, priorities, and due dates.</li>
+                    <li><strong>Assign Work:</strong> Assign issues to team members and set appropriate statuses (Open, In-Progress, Closed).</li>
+                    <li><strong>Track Progress:</strong> Use the calendar view to see upcoming deadlines and manage your workflow.</li>
+                    <li><strong>Get Help:</strong> Use the chatbot for assistance with any questions about the system.</li>
+                </ol>
+            </section>
+        </main>
+    </div>
+    
+    <script>
+        // No stats needed
+    </script>
+</body>
+</html>
