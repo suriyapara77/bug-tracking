@@ -3,14 +3,13 @@ import os
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     
-    # For Vercel deployment, use /tmp for SQLite (only writable location)
-    # For production, consider using PostgreSQL or another cloud database
-    if os.environ.get('VERCEL'):
-        # On Vercel, use /tmp for database (only writable location)
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:////tmp/bug_tracker.db'
-    else:
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///bug_tracker.db'
+    # Handle both PostgreSQL (Render) and SQLite (local dev)
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url and database_url.startswith('postgres://'):
+        # Render uses postgres:// but SQLAlchemy needs postgresql://
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
     
+    SQLALCHEMY_DATABASE_URI = database_url or 'sqlite:///bug_tracker.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 

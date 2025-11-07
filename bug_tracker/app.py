@@ -27,29 +27,10 @@ def create_app():
     app.register_blueprint(issues_bp)
     app.register_blueprint(chatbot_bp)
     
-    # Ensure database is initialized on first request
-    # Store initialization state in app config
-    app.config['_db_initialized'] = False
-    
-    @app.before_request
-    def ensure_database():
-        if app.config.get('_db_initialized'):
-            return
-        
-        try:
-            # Try to query to see if tables exist
-            from models import User
-            User.query.first()
-            app.config['_db_initialized'] = True
-        except Exception:
-            # Tables don't exist, create them
-            try:
-                db.create_all()
-                seed_data()
-                app.config['_db_initialized'] = True
-            except Exception as e:
-                import logging
-                logging.warning(f"Database creation warning: {e}")
+    # Create database tables and seed data
+    with app.app_context():
+        db.create_all()
+        seed_data()
     
     return app
 

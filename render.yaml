@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: bug-tracker
+    env: python
+    buildCommand: pip install -r bug_tracker/requirements.txt
+    startCommand: cd bug_tracker && gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_APP
+        value: app.py
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    healthCheckPath: /
+
