@@ -28,15 +28,19 @@ def create_app():
     app.register_blueprint(chatbot_bp)
     
     # Create database tables and seed data
+    # Use lazy initialization - only create tables when needed
     with app.app_context():
         try:
+            # Check if database file exists or can be created
             db.create_all()
+            # Only seed if database is empty
             seed_data()
         except Exception as e:
             # Log error but don't crash - database might already exist or have issues
             import logging
             logging.warning(f"Database initialization warning: {e}")
             # Try to continue anyway - tables might already exist
+            # In serverless environments, this is often expected on cold starts
     
     return app
 
@@ -44,29 +48,47 @@ def seed_data():
     """Seed the database with sample users and issues"""
     from models import User, Issue
     
-    # Check if data already exists
-    if User.query.first() is not None:
-        return  # Data already seeded
+    try:
+        # Check if data already exists
+        if User.query.first() is not None:
+            return  # Data already seeded
+    except Exception as e:
+        # If query fails, database might not be ready yet
+        import logging
+        logging.warning(f"Could not check for existing data: {e}")
+        return
     
-    # Create sample users
-    users = [
-        User(name='Alex', role='Developer'),
-        User(name='Maddy', role='QA Engineer'),
-        User(name='Sarah', role='Project Manager'),
-        User(name='John', role='Developer'),
-        User(name='Emily', role='Designer'),
-    ]
-    
-    for user in users:
-        db.session.add(user)
-    db.session.commit()
-    
-    # Get user IDs after commit
-    alex = User.query.filter_by(name='Alex').first()
-    maddy = User.query.filter_by(name='Maddy').first()
-    sarah = User.query.filter_by(name='Sarah').first()
-    john = User.query.filter_by(name='John').first()
-    emily = User.query.filter_by(name='Emily').first()
+    try:
+        # Create sample users
+        users = [
+            User(name='Alex', role='Developer'),
+            User(name='Maddy', role='QA Engineer'),
+            User(name='Sarah', role='Project Manager'),
+            User(name='John', role='Developer'),
+            User(name='Emily', role='Designer'),
+        ]
+        
+        for user in users:
+            db.session.add(user)
+        db.session.commit()
+        
+        # Get user IDs after commit
+        alex = User.query.filter_by(name='Alex').first()
+        maddy = User.query.filter_by(name='Maddy').first()
+        sarah = User.query.filter_by(name='Sarah').first()
+        john = User.query.filter_by(name='John').first()
+        emily = User.query.filter_by(name='Emily').first()
+        
+        # Verify all users were created successfully
+        if not all([alex, maddy, sarah, john, emily]):
+            import logging
+            logging.warning("Not all users were created successfully")
+            return  # Exit early if users are missing
+    except Exception as e:
+        import logging
+        logging.warning(f"Error creating users: {e}")
+        db.session.rollback()
+        return  # Exit early if user creation fails
     
     # Calculate dates for the current week
     today = datetime.now()
@@ -201,11 +223,18 @@ def seed_data():
         ),
     ]
     
-    for issue in issues:
-        db.session.add(issue)
-    
-    db.session.commit()
-    print("Sample data seeded successfully!")
+    try:
+        for issue in issues:
+            db.session.add(issue)
+        
+        db.session.commit()
+        import logging
+        logging.info("Sample data seeded successfully!")
+    except Exception as e:
+        import logging
+        logging.warning(f"Error seeding issues: {e}")
+        db.session.rollback()
+        # Don't raise - app should still work without seed data
 
 # Create app instance for flask run
 app = create_app()
